@@ -1,12 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, NgZone } from '@angular/core';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, delay, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { Observable, of, pipe } from 'rxjs';
 import { Router } from '@angular/router';
 
 import { RegisterForm } from '../interfaces/registerForm.interface';
 import { LoginForm } from '../interfaces/loginForm.interface';
+import { cargarUsuarios } from '../interfaces/cargar-usuarios.interface';
 
 import { Usuario } from '../models/usuario.model';
 
@@ -32,6 +33,14 @@ export class UsuarioService {
 
   get Token(): string{
     return localStorage.getItem('token') || '';
+  }
+
+  get headers(){
+    return {
+      headers: {
+        'x-token': this.Token
+      }
+    }
   }
 
   googleInit() {
@@ -62,11 +71,7 @@ export class UsuarioService {
 
   validarToken(): Observable<boolean> {
 
-    return this.http.get(`${url}/auth/renew`,{
-      headers: {
-        'x-token': this.Token
-      }
-    }).pipe(
+    return this.http.get(`${url}/auth/renew`, this.headers).pipe(
       tap( (resp: any )=> {
         const { email, google, nombre, role, img = '', uid } = resp.usuario;
         this.usuario = new Usuario(nombre, email, '', img, google, role, uid);
@@ -96,11 +101,7 @@ export class UsuarioService {
       role: this.usuario.role
     }
 
-    return this.http.put(`${url}/usuarios/actualizar-usuario/${this.uid}`, data, {
-        headers: {
-          'x-token': this.Token
-        }
-      });
+    return this.http.put(`${url}/usuarios/actualizar-usuario/${this.uid}`, data, this.headers);
 
   }
 
@@ -125,4 +126,36 @@ export class UsuarioService {
                     )
 
   }
+
+  cargarUsuarios(desde: number = 5){
+
+    return this.http.get<cargarUsuarios>(`${url}/usuarios?desde=${desde}`, this.headers)
+                    .pipe(
+                      // delay(500),
+                      map(resp => {
+
+                        const usuarios = resp.usuarios.map(
+                                                        user => new Usuario(user.nombre, user.email, '', user.img, user.google, user.role, user.uid)
+                        );
+
+                        return {
+                          total: resp.total,
+                          usuarios
+                        };
+                      })
+                    );
+  }
+
+  eliminarUsuario({uid}: Usuario) {
+    return this.http.delete(`${url}/usuarios/borrar-usuario/${uid}`, this.headers);
+  }
+
+  guardarUsuario(usuario: Usuario){
+
+
+    return this.http.put(`${url}/usuarios/actualizar-usuario/${this.usuario.uid}`, usuario, this.headers);
+
+  }
+
+
 }

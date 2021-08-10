@@ -43,6 +43,10 @@ export class UsuarioService {
     }
   }
 
+  get role():'ADMIN_ROLE' | 'USER_ROLE'{
+    return this.usuario.role
+  }
+
   googleInit() {
 
     return new Promise((resolve:any) => {
@@ -58,8 +62,15 @@ export class UsuarioService {
     })
   }
 
+  guardarStorage(token: string, menu:any){
+    localStorage.setItem('token', token);
+    localStorage.setItem('menu', JSON.stringify(menu));
+  }
+
   logout() {
     localStorage.removeItem('token');
+    
+    localStorage.removeItem('menu');
 
     this.auth2.signOut().then(() => {
 
@@ -75,7 +86,7 @@ export class UsuarioService {
       tap( (resp: any )=> {
         const { email, google, nombre, role, img = '', uid } = resp.usuario;
         this.usuario = new Usuario(nombre, email, '', img, google, role, uid);
-        localStorage.setItem('token', resp.token);
+        this.guardarStorage(resp.token, resp.menu);
         return true;
       }),
       map( resp => true),
@@ -88,7 +99,7 @@ export class UsuarioService {
     return this.http.post(`${url}/usuarios/crear-usuario`, formData)
                     .pipe(
                       tap( (resp: any)  => {
-                        localStorage.setItem('token', resp.token)
+                        this.guardarStorage(resp.token, resp.menu);
                       })
                     );
 
@@ -110,7 +121,7 @@ export class UsuarioService {
     return this.http.post(`${url}/auth/login`, formData)
                     .pipe(
                       tap( (resp: any)  => {
-                        localStorage.setItem('token', resp.token)
+                        this.guardarStorage(resp.token, resp.menu);
                       })
                     )
 
@@ -121,7 +132,7 @@ export class UsuarioService {
     return this.http.post(`${url}/auth/google`, {token})
                     .pipe(
                       tap( (resp: any)  => {
-                        localStorage.setItem('token', resp.token)
+                        this.guardarStorage(resp.token, resp.menu);
                       })
                     )
 

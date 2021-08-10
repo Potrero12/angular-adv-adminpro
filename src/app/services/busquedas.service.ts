@@ -47,6 +47,10 @@ export class BusquedasService {
 
   }
 
+  busquedaGlobal(termino: string){
+    return this.http.get(`${url}/todo/${termino}`, this.headers)
+  }
+
   buscar(
       tipo: 'usuarios'|'medicos'|'hospitales',
       termino: string
